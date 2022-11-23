@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "date-fns": "^2.29.3",
+    "highcharts-vue": "^1.4.0",
     "vue": "^3.2.41"
   },
   "devDependencies": {

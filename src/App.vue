@@ -10,14 +10,25 @@ import sunrisetIcon from "./assets/fill/all/sunrise.svg";
 import sunsetIcon from "./assets/fill/all/sunset.svg";
 import windIcon from "./assets/fill/all/dust-wind.svg";
 
+interface Temperature {
+  day: number;
+}
+
 interface ForecastCurrent {
   sunrise: number;
   sunset: number;
   uvi: number;
 }
 
+interface ForecastDaily {
+  dt: number;
+  temp: Temperature;
+  weather: WeatherConditions[];
+}
+
 interface Forecast {
   current: ForecastCurrent;
+  daily: ForecastDaily[];
   timezone: string;
 }
 
@@ -126,6 +137,45 @@ const weatherIcon = computed(() => {
     import.meta.url
   ).href;
 });
+
+const chartOptions = computed(() => {
+  if (!forecast.value.daily) return;
+
+  return {
+    chart: {
+      type: "spline",
+      useUTC: false,
+    },
+    title: {
+      text: null,
+    },
+    xAxis: {
+      type: "datetime",
+    },
+    yAxis: {
+      title: { text: "Temperature °C" },
+    },
+    series: [
+      {
+        name: "Weather",
+        data: forecast.value.daily.map(({ dt, temp, weather }) => ({
+          x: dt * 1000,
+          y: temp.day,
+          marker: {
+            height: 60,
+            symbol: `url(${
+              new URL(
+                `./assets/fill/openweathermap/${weather[0].icon}.svg`,
+                import.meta.url
+              ).href
+            })`,
+            width: 60,
+          },
+        })),
+      },
+    ],
+  };
+});
 </script>
 
 <template>
@@ -134,8 +184,10 @@ const weatherIcon = computed(() => {
       <section class="content">
         <header>
           <div class="header-date">
-            <h1 class="date-title">January 2022</h1>
-            <h6 class="date-subtitle">Thursday, Jan 4, 2022</h6>
+            <h1 class="date-title">{{ format(new Date(), "MMMM yyyy") }}</h1>
+            <h6 class="date-subtitle">
+              {{ format(new Date(), "EEEE, MMM d, yyyy") }}
+            </h6>
           </div>
           <div class="header-search">
             <input
@@ -176,6 +228,13 @@ const weatherIcon = computed(() => {
             />
           </div>
         </div>
+        <div v-if="Boolean(forecast.daily)">
+          <highcharts
+            class="hc"
+            :options="chartOptions"
+            ref="chart"
+          ></highcharts>
+        </div>
       </section>
       <section class="sidebar">
         <div
@@ -183,8 +242,9 @@ const weatherIcon = computed(() => {
           v-if="Boolean(weather.main) && Boolean(forecast.timezone)"
         >
           <div class="sidebar-location">
-            <h1 class="location-title">Mejasem Barat</h1>
-            <h6 class="location-subtitle">Tegal, Indonesia</h6>
+            <h1 class="location-title">
+              {{ weather.name }}, {{ weather.sys.country }}
+            </h1>
           </div>
           <span class="sidebar-date">08:54 AM</span>
         </div>
@@ -281,10 +341,6 @@ hr {
   padding: 10px 0px;
 }
 
-.content header .header-date {
-  text-align: center;
-}
-
 .content header .header-date h1,
 h6 {
   display: inline-block;
@@ -317,7 +373,7 @@ h6 {
 }
 
 .sidebar-weather {
-  margin-top: 60px;
+  margin-top: 30px;
 }
 
 .sidebar-weather .weather-wrap {
@@ -327,12 +383,12 @@ h6 {
 }
 
 .weather-wrap .weather-number {
-  font-size: 48px;
+  font-size: 32px;
   font-weight: bolder;
 }
 
 .weather-wrap .weather-info {
-  font-size: 24px;
+  font-size: 20px;
 }
 
 .sidebar .sidebar-meta {
@@ -347,7 +403,7 @@ h6 {
 }
 
 .location-title {
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 400;
   margin: 5px 0px;
 }
